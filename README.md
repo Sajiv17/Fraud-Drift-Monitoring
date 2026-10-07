@@ -180,7 +180,7 @@ See [WRITEUP.md](WRITEUP.md) for detailed technical explanation.
 
 ---
 
-## Interactive Web Demo (Optional)
+## Interactive Web Demo
 
 The `streamlit_app/` folder contains an optional interactive web application for exploring the model. This is NOT part of the core requirements but provides a user-friendly interface for testing predictions.
 
