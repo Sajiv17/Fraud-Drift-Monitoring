@@ -162,9 +162,10 @@ def main():
 
     # Get feature importance for drift monitoring
     feature_importance_df = get_feature_importance(rf_model, X_train.columns, top_n=TOP_N_FEATURES)
-    top_features = feature_importance_df['feature'].tolist()
+    # Exclude Time from drift monitoring (it increases monotonically by design)
+    top_features = [f for f in feature_importance_df['feature'].tolist() if f != 'Time']
 
-    print(f"\nMonitoring top {len(top_features)} features for drift:")
+    print(f"\nMonitoring top {len(top_features)} features for drift (excluding Time):")
     print(", ".join(top_features[:5]) + "...")
 
     # Baseline PR-AUC

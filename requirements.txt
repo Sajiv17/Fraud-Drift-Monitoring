@@ -1,24 +1,22 @@
-# Core data science libraries
-pandas>=1.5.0          # For data manipulation (loading CSV, filtering, grouping)
-numpy>=1.24.0          # For numerical operations (arrays, math functions)
+# Core ML and Data Science
+scikit-learn==1.3.0
+pandas==2.0.3
+numpy==1.24.3
+scipy==1.11.1
 
-# Machine learning
-scikit-learn>=1.3.0    # ML models (Logistic Regression, Random Forest, Isolation Forest)
-imbalanced-learn>=0.11.0  # For SMOTE (handling class imbalance)
-
-# Statistical tests and evaluation
-scipy>=1.11.0          # For KS test (drift detection)
+# Imbalanced learning
+imbalanced-learn==0.11.0
 
 # Visualization
-matplotlib>=3.7.0      # For creating charts and plots
-seaborn>=0.12.0        # For prettier statistical plots
+matplotlib==3.7.2
+seaborn==0.12.2
 
 # Model persistence
-joblib>=1.3.0          # For saving/loading trained models
+joblib==1.3.1
 
-# Jupyter notebooks
-jupyter>=1.0.0         # Interactive notebook environment
-ipykernel>=6.25.0      # Python kernel for Jupyter
+# Jupyter notebooks (optional)
+jupyter>=1.0.0
+ipykernel>=6.25.0
 
-# Optional: advanced model (you can remove if time is short)
-# xgboost>=2.0.0       # Gradient boosting (better than Random Forest but slower)
+# Optional: Web demo
+streamlit==1.31.0

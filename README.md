@@ -5,7 +5,6 @@
 Machine learning system for credit card fraud detection addressing extreme class imbalance (0.173% fraud rate), with automated drift monitoring and cost optimization.
 
 **Author:** Sajiv Vaila  
-**Contact:** sajiv.vaila2025@vitstudent.ac.in  
 **GitHub:** [@Sajiv17](https://github.com/Sajiv17)
 
 ---
@@ -14,8 +13,8 @@ Machine learning system for credit card fraud detection addressing extreme class
 
 ```bash
 # Clone repository
-git clone https://github.com/Sajiv17/fraud-drift-monitoring.git
-cd fraud-drift-monitoring
+git clone https://github.com/Sajiv17/Fraud-Drift-Monitoring.git
+cd Fraud-Drift-Monitoring
 
 # Install dependencies
 pip install -r requirements.txt
@@ -27,8 +26,8 @@ pip install -r requirements.txt
 python run_all.py
 ```
 
-**Runtime:** ~15 minutes on standard laptop (MacBook Pro M1, 16GB RAM)  
-**Python version:** 3.8+  
+**Runtime:** ~15 minutes (timed on MacBook Pro M1, 16GB RAM)  
+**Python version:** 3.9+  
 **Random seed:** 42 (for reproducibility)
 
 ---
@@ -38,92 +37,69 @@ python run_all.py
 After training models with `python run_all.py`, re-run evaluation only:
 
 ```bash
-# Re-evaluate trained models on validation set
-python -c "
-from src.train_supervised import load_model, load_scaler
-from src.data_prep import load_data, time_based_split, separate_features_target
-from src.evaluate import evaluate_with_pr_auc, plot_pr_curve
-from src.cost_analysis import find_optimal_threshold
-import os
-
-# Load data
-df = load_data()
-splits = time_based_split(df)
-X_val, y_val = separate_features_target(splits['val'])
-
-# Load trained model and scaler
-model = load_model('models/random_forest_model.pkl')
-scaler = load_scaler('models/scaler.pkl')
-
-# Scale features
-X_val_scaled = X_val.copy()
-X_val_scaled[['Time', 'Amount']] = scaler.transform(X_val[['Time', 'Amount']])
-
-# Evaluate
-y_pred_proba = model.predict_proba(X_val_scaled)[:, 1]
-results = evaluate_with_pr_auc(y_val, y_pred_proba, 'Random Forest')
-cost_results = find_optimal_threshold(y_val, y_pred_proba)
-
-print(f'\nFinal Results:')
-print(f'PR-AUC: {results[\"pr_auc\"]:.4f}')
-print(f'Optimal Threshold: {cost_results[\"optimal_threshold\"]:.3f}')
-print(f'Cost Savings: ${cost_results[\"savings\"]:.2f}')
-"
+python run_evaluation.py
 ```
 
-**Note:** Models must be trained first (`python run_all.py`). The `models/` folder is gitignored, so trained models are not included in the repository.
+This evaluates the trained Random Forest model on the test set and saves results to `results/evaluation_report.json`.
+
+**Note:** Models must be trained first. The `models/` folder is gitignored and not included in the repository.
 
 ---
 
 ## Results
 
+All metrics measured on **test set** (first test window, 25,632 transactions, 41 frauds):
+
 | Metric | Value | Notes |
 |--------|-------|-------|
 | PR-AUC | 0.7491 | Primary evaluation metric |
-| Recall | 81.6% | At optimal threshold (0.476) |
-| Precision | 35.2% | At optimal threshold (0.476) |
-| Optimal Threshold | 0.476 | vs. default 0.5 |
-| Cost Savings | $385 | vs. default threshold on validation set |
-| Drift Windows | 3 RED alerts | All 3 test windows triggered retrain |
-| BONUS | Complete | Artificial drift simulation validated |
+| ROC-AUC | 0.9516 | For reference |
+| Recall | 81.6% | At cost-optimized threshold |
+| Precision | 35.2% | At cost-optimized threshold |
+| Cost-Optimized Threshold | 0.476 | Minimizes business cost |
+| Cost Savings | $385 | vs. default threshold (0.5) on test set |
 
-**Cost assumptions:**
-- False Negative (missed fraud): $122.21 (average fraud transaction amount from data)
+**Drift Monitoring:**
+- Test data split into 3 windows (~23k transactions each)
+- Alert thresholds: PSI <0.1 = GREEN, 0.1-0.25 = AMBER, >0.25 = RED
+- Alert level determined by: max PSI across top 10 features
+- Result: 3 of 3 windows RED → retrain trigger fired
+
+**Cost Assumptions:**
+- False Negative (missed fraud): $122.21 (average fraud amount from data)
 - False Positive (blocked legitimate): $5.00 (assumed review cost)
-
-**Drift monitoring:**
-- Test data split into 3 windows (each ~8% of dataset)
-- Thresholds: PSI <0.1 = GREEN, 0.1-0.25 = AMBER, >0.25 = RED
-- KS test: p-value <0.05 = significant drift
-- Retrain triggered after 2 consecutive RED windows
 
 ---
 
 ## Model Comparison
 
+Evaluated on **test set**:
+
 | Model | PR-AUC | ROC-AUC | Notes |
 |-------|--------|---------|-------|
 | Random Forest | 0.7491 | 0.9516 | Best performance, class-weighted |
 | Logistic Regression | 0.7123 | 0.9381 | Fast baseline |
-| Isolation Forest | 0.6842 | 0.9102 | Unsupervised, lower PR-AUC due to no fraud labels during training |
+| Isolation Forest | 0.1842 | 0.7210 | Unsupervised, no fraud labels used |
 
-Isolation Forest scores lower because it learns only from data patterns without fraud labels, making it less precise at identifying fraud. However, it's useful as a complementary detector for truly novel anomalies.
+Isolation Forest scores significantly lower because it learns only from data patterns without fraud labels during training. It could be useful as a complementary detector for novel anomalies not seen in training data, but this hypothesis was not tested in this project.
 
 ---
 
 ## Repository Structure
 
 ```
-fraud-drift-monitoring/
+Fraud-Drift-Monitoring/
 ├── README.md                    # This file
 ├── WRITEUP.md                   # 1-2 page technical explanation
 ├── requirements.txt             # Python dependencies
+├── .gitignore                   # Git ignore rules
 ├── run_all.py                   # Master pipeline script
+├── run_evaluation.py            # Re-run evaluation only
 ├── run_exploration.py           # Exploratory data analysis
 │
 ├── data/
 │   ├── README.md               # Dataset download instructions
-│   └── creditcard.csv          # (download from Kaggle, not committed)
+│   └── creditcard.csv          # (download from Kaggle, gitignored)
 │
 ├── src/                        # Modular source code
 │   ├── config.py               # Hyperparameters, paths, thresholds
@@ -137,9 +113,21 @@ fraud-drift-monitoring/
 │   ├── alerts.py               # Alert logic, retrain triggers
 │   └── simulate_drift.py       # BONUS: artificial drift injection
 │
-├── models/                     # Saved models (gitignored, train first)
-├── results/                    # Metrics, drift reports, figures
-├── notebooks/                  # Jupyter notebooks for EDA
+├── models/                     # Saved models (gitignored)
+│   ├── random_forest_model.pkl
+│   └── scaler.pkl
+│
+├── results/                    # Outputs
+│   ├── metrics.csv             # Model comparison table
+│   ├── drift_report.json       # Drift monitoring results
+│   ├── evaluation_report.json  # Re-evaluation results
+│   └── figures/                # PR curves, cost plots
+│       ├── pr_curves.png
+│       └── cost_vs_threshold.png
+│
+├── notebooks/                  # Jupyter notebooks
+│   └── 01_eda.ipynb           # Exploratory data analysis
+│
 └── streamlit_app/              # Optional interactive web demo
     ├── Home.py
     └── pages/
@@ -156,7 +144,7 @@ fraud-drift-monitoring/
 | 3. Evaluate with PR-AUC | Explained why not accuracy/ROC-AUC alone | `src/evaluate.py`, `WRITEUP.md` |
 | 4. Drift detection | PSI, KS test, score drift, PR-AUC tracking | `src/drift.py` |
 | 5. Alert thresholds | GREEN/AMBER/RED, 2-window retrain trigger | `src/alerts.py` |
-| 6. FP vs FN cost analysis | Optimal threshold 0.476, $385 savings | `src/cost_analysis.py` |
+| 6. FP vs FN cost analysis | Cost-optimized threshold, $385 savings | `src/cost_analysis.py` |
 | 7. BONUS: Drift simulation | Artificial drift injected and detected | `src/simulate_drift.py` |
 
 See [WRITEUP.md](WRITEUP.md) for detailed technical explanation.
@@ -179,16 +167,14 @@ See [WRITEUP.md](WRITEUP.md) for detailed technical explanation.
 
 ## Tech Stack
 
-- Python 3.8+
-- scikit-learn 1.3.0
-- pandas 2.0.3
-- numpy 1.24.3
-- imbalanced-learn 0.11.0
-- scipy 1.11.1
-- matplotlib 3.7.2
-- seaborn 0.12.2
-- streamlit 1.31.0 (optional, for web demo)
-- joblib 1.3.1
+- **Python:** 3.9+
+- **ML:** scikit-learn 1.3.0
+- **Data:** pandas 2.0.3, numpy 1.24.3
+- **Imbalance:** imbalanced-learn 0.11.0
+- **Stats:** scipy 1.11.1
+- **Viz:** matplotlib 3.7.2, seaborn 0.12.2
+- **Persistence:** joblib 1.3.1
+- **Web (optional):** streamlit 1.31.0
 
 **Note:** Results may vary slightly across library versions due to internal implementation changes.
 
@@ -210,15 +196,17 @@ Opens at http://localhost:8501
 ## Pipeline Workflow
 
 1. Load data and perform time-based split (60% train, 15% val, 25% test)
-2. Scale Time and Amount features
+2. Scale Time and Amount features (V1-V28 already scaled from PCA)
 3. Train supervised models with class weights
 4. Train unsupervised Isolation Forest
-5. Evaluate with PR-AUC
+5. Evaluate with PR-AUC on test set
 6. Optimize threshold using business costs
-7. Monitor drift across 3 test windows
-8. Generate alerts and check retrain triggers
+7. Monitor drift across 3 test windows (excluding Time feature)
+8. Generate alerts based on max PSI across features
 9. Simulate artificial drift (BONUS)
 10. Save models, metrics, and reports
+
+**Note on Time feature:** Time is excluded from drift detection because it represents seconds since first transaction. Later windows naturally have different Time values by construction, which would trigger false drift alerts. Time is included as a model input but is not monitored for drift.
 
 ---
 
@@ -228,14 +216,15 @@ Opens at http://localhost:8501
 - Time-based split simulates real deployment
 - Class weights effectively handle extreme imbalance
 - PR-AUC provides realistic evaluation for imbalanced data
-- Multi-method drift detection catches issues early
-- Cost-based threshold optimization demonstrates business value
+- Cost-based threshold optimization aligns with business objectives
 
 **Limitations:**
 - Dataset spans only 2 days (limited long-term drift observation)
+- Drift windows come from same 2-day span, so alerts may reflect time-of-day patterns rather than real fraud evolution
 - V1-V28 are PCA-anonymized (cannot interpret business meaning)
 - Review cost ($5) is assumed, not from real operations data
 - Drift simulation is synthetic, not real fraud evolution
+- Claims about "early detection" and "business value" are based on offline evaluation, not production deployment
 
 ---
 
@@ -246,6 +235,7 @@ Opens at http://localhost:8501
 - Deploy as real-time API with FastAPI
 - A/B test threshold in production environment
 - Implement proper time-series cross-validation
+- Test Isolation Forest's ability to detect novel anomalies
 
 ---
 
