@@ -1,0 +1,14 @@
+[theme]
+# Professional, vibrant color scheme - clean but colorful
+primaryColor = "#FF6B6B"            # Coral red (attention, fraud alerts)
+backgroundColor = "#F8F9FA"          # Soft white (not harsh white)
+secondaryBackgroundColor = "#E3F2FD" # Light blue (calm, professional)
+textColor = "#2C3E50"               # Dark blue-gray (easy to read)
+font = "sans serif"
+
+[server]
+headless = true
+port = 8501
+
+[browser]
+gatherUsageStats = false
